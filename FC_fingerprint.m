@@ -1,33 +1,64 @@
-%% Batch example of the Clinical Connectome Fingerprint analysis, proposed in  (Sorrentino P. et al., Neuroimage 2021),
-% to compute identifiability in clinical populations.
-% The code compares two functional connectome (FC) acquisitions/sessions for each subject (defined as test and retest)
-% contained in the sample dataset (data_test_FC) and give as result an
-% "identifiabilty matrix" (Amico & Goñi, Scientific Reports 2018). Its main diagonal (top left to bottom right) highlights the
-% self identifiability (Iself) of the sample, i.e. the similarity between the test and retest FC of the
-% same subject. The remaining elements consists in the comparison between
-% test and retest FC of different subjects (Iothers).
-% Clinical connetome fingerprinting extends this idea by comparing
-% individual connectomes between different populations (i.e. Controls and Mild Cognitive
-% Impairment, see Sorrentino et al. for details).
-% Functional Connectomes matrices are obtained through Phase Linearity
-% Measurement (PLM) (Baselice et al., 2019), here only reported in the Alpha band.
-
-%% PLEASE NOTE: For privacy reasons, we could not use the same data as in Sorrentino et al. 
-%% Hence, the sample results reported here do not correspond to the original manuscript, instead they are merely illustrative of the methodology.
-%% Please contact giuseppe.sorrentino@uniparthenope.it for 
-%% (reasonably) requesting the original sample connectomes of the manuscript.
-%% The data used in this code come from healthy MEG connectomes obtained from Human Connectome Project dataset (see Sareen et al., NeuroImage 2021, for details).
-
-%% Authors: Emahnuel TROISI LOPEZ, Pierpaolo SORRENTINO & Enrico AMICO 
-% version 1.0. July 01, 2021
+%% Batch example of Connectome Fingerprint analysis originally proposed in
+%  (Sorrentino P. et al., Neuroimage 2021) to compute identifiability across
+%  functional connectomes.
 %
-%% PLEASE CITE US!
-% If you are using this code for your research, please kindly cite us:
+%  The code compares two functional connectome (FC) acquisitions/sessions
+%  for each subject (defined as test and retest) contained in the sample
+%  dataset (data_test_FC) and returns an "identifiability matrix"
+%  (Amico & Goñi, Scientific Reports 2018).
+%
+%  Its main diagonal (top left to bottom right) highlights the
+%  self-identifiability (Iself) of the sample, i.e. the similarity between
+%  the test and retest FC of the same subject. The remaining elements
+%  consist of comparisons between test and retest FC of different subjects
+%  (Iothers).
+%
+%  In the original implementation, clinical connectome fingerprinting
+%  extended this framework to compare connectomes between different
+%  populations (e.g. Controls vs Mild Cognitive Impairment; see
+%  Sorrentino et al. for details).
+%
+%  In this modified version of the code:
+%  - the clinical fingerprinting component (Iclinical) has been removed,
+%    focusing only on general fingerprinting metrics;
+%  - the normalized differential identifiability (Idiff-norm) is computed
+%    as a standardized effect size (Cohen's d style);
+%  - bootstrap confidence intervals for Idiff-norm are estimated via
+%    subject-level resampling;
+%  - intraclass correlation (ICC) of connectome edges is estimated using
+%    repeated resampling (80% subsampling of subjects) to stabilize the
+%    reliability estimates.
+%
+%  Functional Connectome matrices are obtained through Phase Linearity
+%  Measurement (PLM) (Baselice et al., 2019), here only reported in the
+%  Alpha band.
 
-% Authors: Sorrentino P, Rucco R, Lardone A, Liparoti M, Lopez ET, Cavaliere C, Soricelli A, Jirsa V, Sorrentino G, Amico E.
-% Title: Clinical connectome fingerprints of cognitive decline.
-% Published on: NeuroImage - 2021 Jun 9, p. 118253.
-% Doi: doi.org/10.1016/j.neuroimage.2021.118253
+%% PLEASE NOTE: For privacy reasons, we could not use the same data as in
+%% Sorrentino et al.
+%% Hence, the sample results reported here do not correspond to the original
+%% manuscript, but are merely illustrative of the methodology.
+%% Please contact giuseppe.sorrentino@uniparthenope.it for
+%% (reasonable) requests for the original connectomes used in the manuscript.
+%% The data used in this example come from healthy MEG connectomes obtained
+%% from the Human Connectome Project dataset (see Sareen et al.,
+%% NeuroImage 2021, for details).
+
+%% Authors of the original implementation:
+%  Emahnuel TROISI LOPEZ, Pierpaolo SORRENTINO & Enrico AMICO
+%  Version 1.0 – July 01, 2021
+%
+%  This script is part of a modified version of the original repository
+%  adapted for general connectome fingerprinting and reliability analysis.
+
+%% PLEASE CITE
+%  If you are using the fingerprinting methodology implemented in this code
+%  for your research, please kindly cite:
+
+%  Authors: Sorrentino P, Rucco R, Lardone A, Liparoti M, Lopez ET,
+%  Cavaliere C, Soricelli A, Jirsa V, Sorrentino G, Amico E.
+%  Title: Clinical connectome fingerprints of cognitive decline.
+%  Published on: NeuroImage - 2021 Jun 9, p. 118253.
+%  Doi: doi.org/10.1016/j.neuroimage.2021.118253
 
 %% Initialize environment
 clearvars
@@ -160,4 +191,5 @@ ylabel('90 roi')
 % Optional: thresholded view (if you want it later)
 % ICC_mat_thr = ICC_mat;
 % ICC_mat_thr(ICC_mat_thr < ICC_threshold) = 0;
+
 
