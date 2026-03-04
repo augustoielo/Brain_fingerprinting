@@ -29,18 +29,46 @@ between the test and retest FC of the same subject.\
 The remaining elements consist of comparisons between test and retest FC
 of different subjects (**Iothers**).
 
-From the identifiability matrix it is possible to compute several
-fingerprinting metrics, including:
-
--   **Iself**
--   **Iothers**
--   **Idiff**
--   **Idiff-norm**
--   **Success Rate (SR)**
-
 Additionally, this repository provides tools to estimate the
 **Intraclass Correlation Coefficient (ICC)** of connectome edges using a
 **resampling strategy based on 80% subsampling of subjects**.
+
+The repository implements the following fingerprinting metrics:
+
+- **Iself** – similarity between test and retest connectomes of the same subject  
+- **Iothers** – similarity between connectomes of different subjects  
+- **Idiff** – differential identifiability (Iself − Iothers)  
+- **Idiff-norm** – normalized differential identifiability (Cohen's d style)  
+- **Success Rate (SR)** – proportion of correct identifications  
+- **Edgewise ICC** – reliability of connectome edges estimated with resampling
+
+------------------------------------------------------------------------
+
+## Repository structure
+
+The repository contains a minimal example for computing connectome
+fingerprinting metrics.
+
+Typical workflow:
+
+1. Load functional connectomes (test and retest sessions)
+2. Compute the **identifiability matrix**
+3. Compute fingerprinting metrics (**Iself, Iothers, Idiff, Idiff-norm**)
+4. Estimate **ICC reliability** using resampling
+
+Main components:
+
+- `data_test_FC.mat` – example functional connectome dataset  
+- main script – example implementation of the fingerprinting analysis  
+- `f_load_mat` – function to vectorize FC matrices  
+- `f_ICC_edgewise` – function to compute edgewise ICC
+
+Example usage:
+
+1. Load the example dataset
+2. Run the main script
+3. The script outputs the identifiability matrix, fingerprinting metrics,
+   and ICC reliability estimates.
 
 ------------------------------------------------------------------------
 
@@ -67,6 +95,23 @@ Pierpaolo SORRENTINO\
 Enrico AMICO
 
 Version 1.0 -- July 01, 2021
+
+------------------------------------------------------------------------
+
+## Differences from the original repository
+
+Compared to the original repository (Clinical_fingerprinting), this
+version introduces several modifications:
+
+- the **clinical fingerprinting analysis (Iclinical)** has been removed
+  in order to focus on general connectome fingerprinting metrics;
+- the **normalized differential identifiability (Idiff-norm)** is
+  computed as a standardized effect size (Cohen's *d* style);
+- **bootstrap confidence intervals** for Idiff-norm are estimated via
+  subject-level resampling;
+- **edgewise Intraclass Correlation Coefficient (ICC)** is estimated
+  using repeated **80% subsampling of subjects** in order to stabilize
+  reliability estimates.
 
 ------------------------------------------------------------------------
 
