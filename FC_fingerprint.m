@@ -83,57 +83,81 @@ title('Identifiability Matrix');
 xlabel('Test FC')
 ylabel('Retest FC')
 
+%% Idiff-norm (Cohen's d style) + bootstrap 95% CI
+% Idiff-norm here is computed as: (mean(Iself) - mean(Iothers)) / std_pooled
+% where std_pooled is the pooled SD of Iself and Iothers (equal-weighted)
+
+std_pooled = sqrt( (nanstd(Iself).^2 + nanstd(Iothers).^2) / 2 );
+
+if ~isfinite(std_pooled) || std_pooled == 0
+    warning('std_pooled is not finite or is zero. Idiff-norm will be set to NaN.');
+    Idiff_norm = NaN;
+else
+    Idiff_norm = Idiff / std_pooled;
+end
+
+% Bootstrapped CI for Idiff-norm
+nBoot = 1000;
+Idiff_norm_boot = nan(1, nBoot);
+
+for b = 1:nBoot
+    idx = randsample(n_subj, n_subj, true); % resample subjects WITH replacement
+
+    Iself_b   = Iself(idx);
+    Iothers_b = Iothers(idx);
+
+    Idiff_b = mean(Iself_b, 'omitnan') - mean(Iothers_b, 'omitnan');
+
+    std_pooled_b = sqrt( (std(Iself_b, 'omitnan').^2 + std(Iothers_b, 'omitnan').^2) / 2 );
+
+    if isfinite(std_pooled_b) && std_pooled_b > 0
+        Idiff_norm_boot(b) = Idiff_b / std_pooled_b;
+    end
+end
+
+Idiff_norm_boot = Idiff_norm_boot(isfinite(Idiff_norm_boot));
+CI_Idiff_norm   = prctile(Idiff_norm_boot, [2.5 97.5]);
+
+% Results display
+fprintf('Idiff = %.4f\n', Idiff);
+fprintf('Idiff-norm (Cohen''s d style) = %.4f\n', Idiff_norm);
+fprintf('Bootstrap 95%% CI (Idiff-norm) = [%.4f, %.4f]\n', CI_Idiff_norm(1), CI_Idiff_norm(2));
+
 %% Perform intraclass correlation to highlight which roi mainly contributes to the identifiability
 ICC_threshold = 0.68;
-disp('Computing ICC..')
-ICC_struct = f_ICC_edgewise(FCs_test(:,:)',FCs_retest(:,:)');
-ICC_mat = zeros(n_roi,n_roi);
-ICC_mat(mask_ut) = ICC_struct;
+
+% Resampling parameters
+nReps  = 100;                 % number of resamples
+nSamps = round(n_subj * 0.8); % 80% subsampling (without replacement)
+
+disp('Computing ICC with 80% resampling..')
+
+subs_ICC = nan(nReps, sum(mask_ut(:))); % store edgewise ICC for each resample
+
+for k = 1:nReps
+    subsamples = randperm(n_subj, nSamps);
+
+    TEST   = FCs_test(subsamples, :)';   % edges x subjects
+    RETEST = FCs_retest(subsamples, :)'; % edges x subjects
+
+    subs_ICC(k, :) = f_ICC_edgewise(TEST, RETEST);
+end
+
+% Aggregate (mean ICC across resamples, edgewise)
+ICC_struct_mean = mean(subs_ICC, 1, 'omitnan');
+
+% Build ICC matrix for plotting
+ICC_mat = zeros(n_roi, n_roi);
+ICC_mat(mask_ut) = ICC_struct_mean;
 ICC_mat = ICC_mat + ICC_mat';
 
 subplot(1,2,2)
-imagesc(ICC_mat); axis square; set(gca,'Xtick',[]);set(gca,'Ytick',[]); colorbar; %caxis([-.1 .8]);
-title('ICC Matrix');
+imagesc(ICC_mat); axis square; set(gca,'Xtick',[]); set(gca,'Ytick',[]); colorbar;
+title(sprintf('ICC Matrix (mean of %d resamples, 80%% subsampling)', nReps));
 xlabel('90 roi')
 ylabel('90 roi')
 
-%% Iclinical
-%Here we illustrate how the Iclinical score is computed and how an
-%Iclinical matrix appears. For this purpose we build two sample groups
-%from our dataset. Now we will create 10 test and retest FCs for controls and 10
-%test and retest FCs to simulate a clinical group.
-
-%Control group
-sub_FCs_test_ctrl = FCs_test(1:10,:);
-sub_FCs_retest_ctrl = FCs_retest(1:10,:);
-
-%Simulated clinical group
-sub_FCs_test_clin = FCs_test(11:20,:);
-sub_FCs_retest_clin = FCs_retest(11:20,:);
-
-%Iclinical matrices are obtained cross correlating test of controls with
-%retest of clinicals and vice versa.
-Iclinical_mat1 = corr(sub_FCs_test_ctrl',sub_FCs_retest_clin');
-Iclinical_mat2 = corr(sub_FCs_test_clin',sub_FCs_retest_ctrl');
-
-%Finally, the Iclinical score is computed as the mean similarity of each
-%clinical subject with each control subject, averaged between the two
-%Iclinical matrices.
-Iclinical1=nanmean(Iclinical_mat1,1);
-Iclinical2=nanmean(Iclinical_mat2,2)';
-Iclinical=nanmean([Iclinical1;Iclinical2],1);
-
-ICMAT=figure;
-subplot(1,2,1)
-imagesc(Iclinical_mat1); axis square; set(gca,'Xtick',[]);set(gca,'Ytick',[]); colorbar; caxis([0.3 .9]);
-xlabel('Controls´ FC test')
-ylabel('Clinicals´ FC retest')
-title('Iclinical Matrix #1')
-
-subplot(1,2,2)
-imagesc(Iclinical_mat2); axis square; set(gca,'Xtick',[]);set(gca,'Ytick',[]); colorbar; caxis([0.3 .9]);
-xlabel('Clinicals´ FC test')
-ylabel('Controls´ FC retest')
-title('Iclinical Matrix #2')
-
+% Optional: thresholded view (if you want it later)
+% ICC_mat_thr = ICC_mat;
+% ICC_mat_thr(ICC_mat_thr < ICC_threshold) = 0;
 
